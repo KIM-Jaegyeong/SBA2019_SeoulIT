@@ -1,0 +1,298 @@
+---
+title: "rossmann"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+
+df_train <- fread("data/train.csv",encoding = "UTF-8")
+df_test <- fread("data/test.csv",encoding = "UTF-8")
+df_store <- fread("data/store.csv",encoding = "UTF-8")
+```
+```{r}
+colnames(df_test)
+View(head(df_test, 100))
+colnames(df_store)
+colnames(df_train)
+df_store$Promo2SinceYear
+df_store$Promo2SinceWeek
+str(df_train)
+table(df_train$DayOfWeek)
+```
+```{r}
+df_train <- merge(df_train, df_store, by = "Store")
+df_test <- merge(df_test, df_store, by = "Store")
+
+df_train$PromoInterval_2 <- 0
+df_train$PromoInterval_2[df_train$PromoInterval=="Feb,May,Aug,Nov"]  <- 1
+df_train$PromoInterval_2[df_train$PromoInterval=="Jan,Apr,Jul,Oct"]  <- 2
+df_train$PromoInterval_2[df_train$PromoInterval=="Mar,Jun,Sept,Dec"] <- 3
+df_train$PromoInterval_2 <- as.integer(df_train$PromoInterval_2)
+
+df_train$year  = substring(as.character(df_train$Date), 0, 4)
+df_train$month = substring(as.character(df_train$Date), 6, 7)
+df_train$y_m   = paste0(df_train$year, df_train$month)
+df_train$id    = paste0(df_train$Store, df_train$y_m)
+df_train$S_A   = paste0(df_train$StoreType, df_train$Assortment)
+df_train$Prm   = paste0(as.character(df_train$Promo), as.character(df_train$Promo2))
+
+```
+```{r}
+# table(df_train$StoreType)
+
+s1 <- df_train %>% 
+      group_by(StoreType) %>% 
+      summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = StoreType, y = mean)) + geom_col()
+
+p1
+```
+```{r}
+# StateHoliday
+# a = public holiday 
+# b = Easter holiday 
+# c = Christmas
+# 0 = None
+
+# table(df_train$StateHoliday)
+
+s1 <- df_train %>% 
+      group_by(StateHoliday, StoreType) %>% 
+      summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = StateHoliday, y = mean, fill = StoreType)) + geom_col()
+
+s2 <- df_train %>% 
+      group_by(StateHoliday) %>% 
+      summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = StateHoliday, y = mean)) + geom_col()
+
+grid.arrange(p2, p1, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+
+```
+```{r}
+# SchoolHoliday
+
+# table(df_train$SchoolHoliday)
+
+s1 <- df_train %>% 
+      group_by(SchoolHoliday, StoreType) %>% 
+      summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = SchoolHoliday, y = mean, fill = StoreType)) + geom_col()
+
+s2 <- df_train %>% 
+      group_by(SchoolHoliday) %>% 
+      summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = SchoolHoliday, y = mean)) + geom_col()
+
+grid.arrange(p2, p1, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+
+```
+```{r}
+# SchoolHoliday
+
+# table(df_train$DayOfWeek)
+
+s1 <- df_train %>% 
+      group_by(DayOfWeek) %>% 
+      summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = DayOfWeek, y = mean)) + geom_col()
+
+s2 <- df_train %>% 
+      group_by(DayOfWeek, StoreType) %>% 
+      summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = DayOfWeek, y = mean, fill = StoreType)) + geom_col()
+
+
+s3 <- df_train %>% 
+      group_by(DayOfWeek, Assortment) %>% 
+      summarise(mean = mean(Sales))
+
+p3 = ggplot(data = s3, aes(x = DayOfWeek, y = mean, fill = Assortment)) + geom_col()
+
+s4 <- df_train %>% 
+      group_by(DayOfWeek, S_A) %>% 
+      summarise(mean = mean(Sales))
+
+p4 = ggplot(data = s4, aes(x = DayOfWeek, y = mean, fill = S_A)) + geom_col()
+
+grid.arrange(p1, p2, p3, p4, ncol = 1, nrow = 4, top = 'Rossmann_Sale')
+
+```
+```{r}
+# Assortment
+# a = basic 
+# b = extra
+# c = extended
+
+# table(df_train$Assortment)
+
+s1 <- df_train %>% 
+      group_by(Assortment, StoreType) %>% 
+      summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = Assortment, y = mean, fill = StoreType)) + geom_col()
+
+s2 <- df_train %>% 
+      group_by(Assortment) %>% 
+      summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = Assortment, y = mean)) + geom_col()
+
+s3 <- df_train %>% 
+      group_by(S_A) %>% 
+      summarise(mean = mean(Sales))
+
+p3 = ggplot(data = s3, aes(x = S_A, y = mean)) + geom_col()
+
+grid.arrange(p2, p1, p3, ncol = 1, nrow = 3, top = 'Rossmann_Sale')
+```
+
+```{r}
+# table(df_train$year)
+
+s1 <- df_train %>%
+                  filter(year == '2013')%>%
+                  group_by(month) %>%
+                  summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = month, y = mean)) + geom_col()
+
+s2 <- df_train %>%
+                  filter(year == '2014')%>%
+                  group_by(month) %>%
+                  summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = month, y = mean)) + geom_col()
+
+s3 <- df_train %>%
+                  filter(year == '2015')%>%
+                  group_by(month) %>%
+                  summarise(mean = mean(Sales))
+
+p3 = ggplot(data = s3, aes(x = month, y = mean)) + geom_col()
+
+s4 <- df_train %>%
+                  group_by(y_m) %>%
+                  summarise(mean = mean(Sales))
+
+p4 = ggplot(data = s4, aes(x = y_m, y = mean)) + geom_col()
+
+
+grid.arrange(p1, p2, p3, p4, ncol = 1, nrow = 4, top = 'Rossmann_Sale')
+```
+```{r}
+# table(df_train$year)
+
+s1 <- df_train %>%
+                  group_by(y_m) %>%
+                  summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = y_m, y = mean)) + geom_col()
+
+
+s2 <- df_train %>%
+                  group_by(y_m, S_A) %>%
+                  summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = y_m, y = mean, fill = S_A)) + geom_col()
+
+grid.arrange(p1, p2, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+```
+```{r}
+# table(df_train$year)
+
+s3 <- df_train %>%
+                  group_by(y_m, Assortment) %>%
+                  summarise(mean = mean(Sales))
+
+p3 = ggplot(data = s3, aes(x = y_m, y = mean, fill = Assortment)) + geom_col()
+
+s2 <- df_train %>%
+                  group_by(y_m, StoreType) %>%
+                  summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = y_m, y = mean, fill = StoreType)) + geom_col()
+
+grid.arrange(p3, p4, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+```
+```{r}
+# table(df_train$year)
+
+s1 <- df_train %>%
+                  group_by(y_m) %>%
+                  summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = y_m, y = mean)) + geom_col()
+
+s2 <- df_train %>%
+                  group_by(y_m, PromoInterval_2) %>%
+                  summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = y_m, y = mean, fill = PromoInterval_2)) + geom_col()
+
+grid.arrange(p1, p2, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+```
+```{r}
+# table(df_train$year)
+
+s1 <- df_train %>%
+                  group_by(y_m) %>%
+                  summarise(mean = mean(Sales))
+
+p1 = ggplot(data = s1, aes(x = y_m, y = mean)) + geom_col()
+
+s2 <- df_train %>%
+                  group_by(y_m, Prm) %>%
+                  summarise(mean = mean(Sales))
+
+p2 = ggplot(data = s2, aes(x = y_m, y = mean, fill = Prm)) + geom_col()
+
+grid.arrange(p1, p2, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+```
+```{r}
+s0 <- df_train %>%
+      group_by(Promo) %>%
+      summarise(mean = as.double(mean(Sales)))
+
+p0 <- ggplot(data = s0, aes(x = Promo, y = mean)) + geom_col()
+
+s1 <- df_train %>%
+      group_by(Promo2) %>%
+      summarise(mean = as.double(mean(Sales)))
+
+p1 <- ggplot(data = s1, aes(x = Promo2, y = mean)) + geom_col()
+
+grid.arrange(p0, p1, ncol = 1, nrow = 2, top = 'Rossmann_Sale')
+```
+```{r}
+s1 <- df_train %>%
+      group_by(PromoInterval_2) %>%
+      summarise(mean = mean(Sales))
+
+p1 <- ggplot(data = s1, aes(x = PromoInterval_2, y = mean)) + geom_col()
+
+s2 <- df_train %>%
+      group_by(PromoInterval_2, StoreType) %>%
+      summarise(mean = mean(Sales))
+
+p2 <- ggplot(data = s2, aes(x = PromoInterval_2, y = mean, fill = StoreType)) + geom_col()
+
+grid.arrange(p0, p1, p2, ncol = 1, nrow = 3, top = 'Rossmann_Sale')
+```
